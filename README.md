@@ -1,2 +1,8 @@
-# 3dTrialPort
-Welcome to my 3D Portfolio repository! This project showcases my skills in 3D design and interactive web development using Three.js and Blender. With a passion for creating immersive and visually stunning experiences, I've combined the power of 3D modeling with web technologies to bring my portfolio to life.
+# React + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
