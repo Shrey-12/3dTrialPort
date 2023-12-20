@@ -1,11 +1,143 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { a } from "@react-spring/three";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import islandScene from "../assets/3d/island2.glb";
+import { useFrame,useThree } from "@react-three/fiber";
 
-const Island2 = (props) => {
+const Island2 = ({ isRotating,setIsRotating,setCurrentStage, ...props }) => {
   const islandRef = useRef();
+  const { gl, viewport } = useThree();
   const { nodes, materials } = useGLTF(islandScene);
+
+  const lastX = useRef(0);
+  // Use a ref for rotation speed
+  const rotationSpeed = useRef(0);
+  // Define a damping factor to control rotation damping
+  const dampingFactor = 0.95;
+
+
+  const handlePointerDown = (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    setIsRotating(true);
+
+    // Calculate the clientX based on whether it's a touch event or a mouse event
+    const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+
+    // Store the current clientX position for reference
+    lastX.current = clientX;
+  };
+
+  // Handle pointer (mouse or touch) up event
+  const handlePointerUp = (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    setIsRotating(false);
+  };
+
+  // Handle pointer (mouse or touch) move event
+  const handlePointerMove = (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    if (isRotating) {
+      // If rotation is enabled, calculate the change in clientX position
+      const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+
+      // calculate the change in the horizontal position of the mouse cursor or touch input,
+      // relative to the viewport's width
+      const delta = (clientX - lastX.current) / viewport.width;
+
+      // Update the island's rotation based on the mouse/touch movement
+      islandRef.current.rotation.y += delta * 0.01 * Math.PI;
+
+      // Update the reference for the last clientX position
+      lastX.current = clientX;
+
+      // Update the rotation speed
+      rotationSpeed.current = delta * 0.01 * Math.PI;
+    }
+  };
+
+  // Handle keydown events
+  const handleKeyDown = (event) => {
+    if (event.key === "ArrowLeft") {
+      if (!isRotating) setIsRotating(true);
+
+      islandRef.current.rotation.y += 0.005 * Math.PI;
+      rotationSpeed.current = 0.007;
+    } else if (event.key === "ArrowRight") {
+      if (!isRotating) setIsRotating(true);
+
+      islandRef.current.rotation.y -= 0.005 * Math.PI;
+      rotationSpeed.current = -0.007;
+    }
+  };
+
+  // Handle keyup events
+  const handleKeyUp = (event) => {
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      setIsRotating(false);
+    }
+  };
+
+  useEffect(() => {
+    // Add event listeners for pointer and keyboard events
+    const canvas = gl.domElement;
+    canvas.addEventListener("pointerdown", handlePointerDown);
+    canvas.addEventListener("pointerup", handlePointerUp);
+    canvas.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    // Remove event listeners when component unmounts
+    return () => {
+      canvas.removeEventListener("pointerdown", handlePointerDown);
+      canvas.removeEventListener("pointerup", handlePointerUp);
+      canvas.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [gl, handlePointerDown, handlePointerUp, handlePointerMove, handleKeyDown, handleKeyUp]);
+
+  useFrame(() => {
+    // If not rotating, apply damping to slow down the rotation (smoothly)
+    if (!isRotating) {
+      // Apply damping factor
+      rotationSpeed.current *= dampingFactor;
+
+      // Stop rotation when speed is very small
+      if (Math.abs(rotationSpeed.current) < 0.001) {
+        rotationSpeed.current = 0;
+      }
+
+      islandRef.current.rotation.y += rotationSpeed.current;
+    } else {
+      // When rotating, determine the current stage based on island's orientation
+      const rotation = islandRef.current.rotation.y;
+      const normalizedRotation =
+        ((rotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+
+      // Set the current stage based on the island's orientation
+      switch (true) {
+        case normalizedRotation >= 5.45 && normalizedRotation <= 5.85:
+          setCurrentStage(4);
+          break;
+        case normalizedRotation >= 0.85 && normalizedRotation <= 1.3:
+          setCurrentStage(3);
+          break;
+        case normalizedRotation >= 2.4 && normalizedRotation <= 2.6:
+          setCurrentStage(2);
+          break;
+        case normalizedRotation >= 4.25 && normalizedRotation <= 4.75:
+          setCurrentStage(1);
+          break;
+        default:
+          setCurrentStage(null);
+      }
+    }
+  });
+
   return (
     <a.group ref={islandRef} {...props}>
       <group position={[0.061, -0.006, -0.028]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -188,8 +320,6 @@ const Island2 = (props) => {
             scale={[0.016, 0.036, 0.014]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_51.geometry}
             material={materials.Beams}
             position={[-0.748, 0.048, 1.161]}
@@ -197,8 +327,6 @@ const Island2 = (props) => {
             scale={[-0.048, 0.048, 0.048]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_53.geometry}
             material={materials.Beams}
             position={[-0.748, 0.048, 1.161]}
@@ -206,8 +334,6 @@ const Island2 = (props) => {
             scale={[-0.048, 0.048, 0.048]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_55.geometry}
             material={materials.Beams}
             position={[-0.748, 0.048, 1.161]}
@@ -215,8 +341,6 @@ const Island2 = (props) => {
             scale={[-0.048, 0.048, 0.048]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_57.geometry}
             material={materials.Beams}
             position={[-0.748, 0.048, 1.161]}
@@ -224,8 +348,6 @@ const Island2 = (props) => {
             scale={[-0.048, 0.048, 0.048]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_59.geometry}
             material={materials.Beams}
             position={[-1.009, 1.106, 1.237]}
@@ -789,48 +911,36 @@ const Island2 = (props) => {
             rotation={[0.405, -0.848, 0.341]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_188.geometry}
             material={materials.Pavement_2}
             position={[-1.416, -0.572, 1.462]}
             rotation={[-2.775, 0.771, 2.828]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_190.geometry}
             material={materials.Pavement_2}
             position={[-1.347, -0.574, 1.564]}
             rotation={[-0.124, 0.864, 0.347]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_192.geometry}
             material={materials.Pavement_1}
             position={[-1.437, -0.598, 1.563]}
             rotation={[0.405, -0.848, 0.341]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_194.geometry}
             material={materials.Pavement_2}
             position={[-1.276, -0.521, 1.294]}
             rotation={[3.089, -0.712, 2.845]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_196.geometry}
             material={materials.Smoke}
             position={[-0.89, 1.545, -0.802]}
             scale={0.023}
           />
           <mesh
-            
-            
             geometry={nodes.Object_198.geometry}
             material={materials.Smoke}
             position={[-0.926, 1.65, -0.802]}
@@ -838,8 +948,6 @@ const Island2 = (props) => {
             scale={[0.072, 0.08, 0.073]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_200.geometry}
             material={materials.Smoke}
             position={[-0.803, 1.849, -0.802]}
@@ -847,8 +955,6 @@ const Island2 = (props) => {
             scale={[0.115, 0.128, 0.117]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_202.geometry}
             material={materials.Smoke}
             position={[-0.958, 2.149, -0.802]}
@@ -856,8 +962,6 @@ const Island2 = (props) => {
             scale={[0.164, 0.182, 0.167]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_204.geometry}
             material={materials.Smoke}
             position={[-0.655, 2.459, -0.802]}
@@ -865,8 +969,6 @@ const Island2 = (props) => {
             scale={[0.248, 0.275, 0.252]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_209.geometry}
             material={materials.Thatch}
             position={[-1.441, 1.149, 0.103]}
@@ -874,8 +976,6 @@ const Island2 = (props) => {
             scale={[0.353, 0.352, 0.622]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_211.geometry}
             material={materials.Beams}
             position={[-1.591, 1.871, 0.12]}
@@ -883,8 +983,6 @@ const Island2 = (props) => {
             scale={[0.05, 0.074, 0.074]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_213.geometry}
             material={materials.Beams}
             position={[-0.927, 1.164, 0.314]}
@@ -892,8 +990,6 @@ const Island2 = (props) => {
             scale={[-0.035, 0.035, 0.035]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_215.geometry}
             material={materials.Beams}
             position={[-0.909, 1.59, 0.128]}
@@ -901,8 +997,6 @@ const Island2 = (props) => {
             scale={[-0.035, 0.035, 0.035]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_217.geometry}
             material={materials.Beams}
             position={[-1.441, 1.149, 0.103]}
@@ -910,8 +1004,6 @@ const Island2 = (props) => {
             scale={[0.353, 0.352, 0.622]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_219.geometry}
             material={materials.Beams}
             position={[-0.906, 1.317, 0.041]}
@@ -919,8 +1011,6 @@ const Island2 = (props) => {
             scale={[0.007, 0.136, 0.007]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_221.geometry}
             material={materials.Beams}
             position={[-0.908, 1.334, 0.04]}
@@ -928,8 +1018,6 @@ const Island2 = (props) => {
             scale={[0.007, 0.072, 0.007]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_223.geometry}
             material={materials.Beams}
             position={[-0.882, 1.322, 0.264]}
@@ -937,8 +1025,6 @@ const Island2 = (props) => {
             scale={[0.006, 0.021, 0.081]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_225.geometry}
             material={materials.Beams}
             position={[-0.902, 1.639, 0.07]}
@@ -946,8 +1032,6 @@ const Island2 = (props) => {
             scale={[0.003, 0.021, 0.07]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_227.geometry}
             material={materials.Leaves_1}
             position={[0.737, 0.037, -0.925]}
@@ -955,8 +1039,6 @@ const Island2 = (props) => {
             scale={[-0.167, 0.167, 0.167]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_229.geometry}
             material={materials.Leaves_1}
             position={[1.04, 0.037, -0.922]}
@@ -964,8 +1046,6 @@ const Island2 = (props) => {
             scale={[-0.167, 0.167, 0.167]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_231.geometry}
             material={materials.Leaves_2}
             position={[0.948, 0.304, -0.916]}
@@ -973,8 +1053,6 @@ const Island2 = (props) => {
             scale={[-0.167, 0.167, 0.167]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_233.geometry}
             material={materials.Leaves_2}
             position={[0.725, 0.307, -0.797]}
@@ -982,8 +1060,6 @@ const Island2 = (props) => {
             scale={[-0.135, 0.135, 0.135]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_235.geometry}
             material={materials.Leaves_2}
             position={[0.752, 0.341, -1.036]}
@@ -991,8 +1067,6 @@ const Island2 = (props) => {
             scale={[-0.135, 0.135, 0.135]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_237.geometry}
             material={materials.Leaves_1}
             position={[0.78, 0.54, -0.93]}
@@ -1000,8 +1074,6 @@ const Island2 = (props) => {
             scale={[-0.135, 0.135, 0.135]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_239.geometry}
             material={materials.Leaves_1}
             position={[1.148, 0.376, -0.851]}
@@ -1009,8 +1081,6 @@ const Island2 = (props) => {
             scale={[-0.135, 0.135, 0.135]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_241.geometry}
             material={materials.Leaves_2}
             position={[0.943, 0.377, -0.983]}
@@ -1027,8 +1097,6 @@ const Island2 = (props) => {
             scale={[-0.135, 0.135, 0.135]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_245.geometry}
             material={materials.Leaves_3}
             position={[0.87, 0.685, -0.851]}
@@ -1036,8 +1104,6 @@ const Island2 = (props) => {
             scale={[-0.125, 0.125, 0.125]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_247.geometry}
             material={materials.Leaves_1}
             position={[0.915, 0.2, -0.751]}
@@ -1045,8 +1111,6 @@ const Island2 = (props) => {
             scale={[-0.095, 0.095, 0.095]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_249.geometry}
             material={materials.Leaves_1}
             position={[0.937, 0.21, -1.099]}
@@ -1054,8 +1118,6 @@ const Island2 = (props) => {
             scale={[-0.094, 0.094, 0.094]}
           />
           <mesh
-            
-            
             geometry={nodes.Object_251.geometry}
             material={materials.Leaves_3}
             position={[1.053, 0.492, -1.048]}
@@ -1108,8 +1170,6 @@ const Island2 = (props) => {
             scale={0.126}
           />
           <mesh
-            
-            
             geometry={nodes.Object_263.geometry}
             material={materials.Water}
             position={[0.114, -0.464, 0.407]}
